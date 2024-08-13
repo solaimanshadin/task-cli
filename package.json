@@ -1,0 +1,15 @@
+{
+  "name": "task-cli",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "bin": {
+    "task-cli": "./bin/index.js"
+  },
+  "keywords": [],
+  "type": "module",
+  "author": "Solaiman Shadin",
+  "license": "ISC"
+}
