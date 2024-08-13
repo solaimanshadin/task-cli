@@ -18,94 +18,105 @@ const COMMAND = {
     'MARK_AS_INPROGRESS': 'mark-as-inprogress',
 }
 
-const filePath = path.join(__dirname, '/todos.json')
+const tasksFilePath = path.join(__dirname, '/tasks.json')
+const recentTaskIdFilePath = path.join(__dirname, '/.recent-task-id')
 
-readFile(filePath, 'utf-8').then(async (data) => {
-    let todos = JSON.parse(data || "[]")
+let tasksJson;
+try {
+    tasksJson = await readFile(filePath, 'utf-8')
+} catch (error) {
+    await writeFile(tasksFilePath, '[]')
+}
 
-    const updateFile = async () =>  await writeFile(filePath, JSON.stringify(todos, null, 2))
+let tasks = JSON.parse(tasksJson || "[]")
 
-    const findTodoById = (id) =>  todos.find(todo => todo.id == id)
-    
-    switch (command) {
-        case COMMAND.ADD: {
-            let newTodoId = await readFile(path.join(__dirname, '/lastId'), 'utf-8') || 0;
-            newTodoId++;
-            writeFile(path.join(__dirname, '/lastId'), String(newTodoId))
-            const createdAt = new Date();
-            const newTodo = {
-                id: newTodoId,
-                status: 'todo',
-                description: optionOrValue,
-                createdAt,
-                updatedAt: createdAt,
-            }
-            todos.push(newTodo)
-            updateFile()
-            console.log(`Todo added, ID: ${newTodoId}!`)
-            break;
-        }
-        case COMMAND.LIST: {
-            if (optionOrValue === 'inprogress') {
-                todos = todos.filter(todo => todo.status === 'inprogress')
-            }
-            if (optionOrValue === 'todo') {
-                todos = todos.filter(todo => todo.status === 'todo')
-            }
-            if (optionOrValue === 'done') {
-                todos = todos.filter(todo => todo.status === 'done')
-            }
-            todos.forEach(todo => console.table(`${todo.id} - ${todo.status} - ${todo.description}`))
-            break;
-        }
-        case COMMAND.UPDATE:
-            const todo = findTodoById(optionOrValue)
-            if (todo) {
-                todo.description = secondOptionOrValue
-                todo.updatedAt = new Date()
-                updateFile()
-                console.log(`Todo with id ${optionOrValue} updated!`)
-            }else {
-                console.error(`Todo with id ${optionOrValue} not found!`);
-            }
-            break;
-        case COMMAND.MARK_AS_DONE: {
-            const todo = findTodoById(optionOrValue)
-            if(todo) {
-                todo.status = 'done'
-                updateFile()
-                console.log(`Todo with id ${optionOrValue} marked as done!`)
-            }else{
-                console.error(`Todo with id ${optionOrValue} not found!`);
-            }
-            break;
-        }
-            
-        case COMMAND.MARK_AS_INPROGRESS: {
-            const todo = findTodoById(optionOrValue)
-            if(todo) {
-                todo.status = 'inprogress'
-                updateFile()
-                console.log(`Todo with id ${optionOrValue} marked as inprogress!`) 
-            } else {
-                console.error(`Todo with id ${optionOrValue} not found!`);
-            }
-            break;
-        }
-            
-        case COMMAND.DELETE: {
-            const todo = findTodoById(optionOrValue)
-            if(todo) {
-                todos = todos.filter(todo => todo.id != optionOrValue)
-                updateFile()
-                console.log(`Todo with id ${optionOrValue} deleted!`)
-            } else {
-                console.error(`Todo with id ${optionOrValue} not found!`);
-            }
-            break;
-        }
-        default:
-            console.log("Invalid Command!")
+const updateTasksFile = async () => await writeFile(tasksFilePath, JSON.stringify(tasks, null, 2))
 
+const findTodoById = (id) => tasks.find(todo => todo.id == id)
+
+switch (command) {
+    case COMMAND.ADD: {
+        let newTodoId = 0;
+        try {
+            newTodoId = await readFile(recentTaskIdFilePath, 'utf-8') || 0;
+        } catch (error) {
+            writeFile(recentTaskIdFilePath, '0')
+        }
+        newTodoId++;
+        const createdAt = new Date();
+        const newTodo = {
+            id: newTodoId,
+            status: 'todo',
+            description: optionOrValue,
+            createdAt,
+            updatedAt: createdAt,
+        }
+        tasks.push(newTodo)
+        writeFile(recentTaskIdFilePath, String(newTodoId))
+        console.log(`Todo added, ID: ${newTodoId}!`)
+        break;
     }
-})
+    case COMMAND.LIST: {
+        if (optionOrValue === 'inprogress') {
+            tasks = tasks.filter(todo => todo.status === 'inprogress')
+        }
+        if (optionOrValue === 'todo') {
+            tasks = tasks.filter(todo => todo.status === 'todo')
+        }
+        if (optionOrValue === 'done') {
+            tasks = tasks.filter(todo => todo.status === 'done')
+        }
+        tasks.forEach(todo => console.table(`${todo.id} - ${todo.status} - ${todo.description}`))
+        break;
+    }
+    case COMMAND.UPDATE:
+        const todo = findTodoById(optionOrValue)
+        if (todo) {
+            todo.description = secondOptionOrValue
+            todo.updatedAt = new Date()
+            console.log(`Todo with id ${optionOrValue} updated!`)
+        } else {
+            console.error(`Todo with id ${optionOrValue} not found!`);
+        }
+        break;
+    case COMMAND.MARK_AS_DONE: {
+        const todo = findTodoById(optionOrValue)
+        if (todo) {
+            todo.status = 'done'
+            console.log(`Todo with id ${optionOrValue} marked as done!`)
+        } else {
+            console.error(`Todo with id ${optionOrValue} not found!`);
+        }
+        break;
+    }
+
+    case COMMAND.MARK_AS_INPROGRESS: {
+        const todo = findTodoById(optionOrValue)
+        if (todo) {
+            todo.status = 'inprogress'
+            
+            console.log(`Todo with id ${optionOrValue} marked as inprogress!`)
+        } else {
+            console.error(`Todo with id ${optionOrValue} not found!`);
+        }
+        break;
+    }
+
+    case COMMAND.DELETE: {
+        const todo = findTodoById(optionOrValue)
+        if (todo) {
+            tasks = tasks.filter(todo => todo.id != optionOrValue)
+            
+            console.log(`Todo with id ${optionOrValue} deleted!`)
+        } else {
+            console.error(`Todo with id ${optionOrValue} not found!`);
+        }
+        break;
+    }
+    default: {
+        console.log("Invalid Command!")
+        process.exit(1)
+    }
+}
+
+await updateTasksFile()
